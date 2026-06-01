@@ -1105,4 +1105,74 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
   .kpi-row { grid-template-columns: 1fr 1fr; }
   .login-card { padding: 2rem 1.25rem; }
   .filter-chips { display: none; }
+  .exec-actions { gap: 0.3rem; }
+  .exec-actions .btn-ghost { padding: 0.3rem 0.5rem; font-size: 0.7rem; }
+}
+
+/* ─── EXEC ACTIONS ─── */
+.exec-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.btn-whats {
+  color: #25D366 !important;
+  border-color: rgba(37,211,102,0.3) !important;
+}
+.btn-whats:hover {
+  background: rgba(37,211,102,0.12) !important;
+  border-color: #25D366 !important;
+}
+
+.btn-pdf {
+  color: var(--blue) !important;
+  border-color: rgba(96,165,250,0.3) !important;
+}
+.btn-pdf:hover {
+  background: rgba(96,165,250,0.12) !important;
+  border-color: var(--blue) !important;
+}
+
+/* ─── WHATSAPP MODAL ─── */
+.modal-whats-inner { max-width: 560px; }
+
+.whats-char-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+}
+
+.btn-whats-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #25D366;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-whats-send:hover {
+  background: #20bc5a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37,211,102,0.35);
+}
+
+.btn-whats-app {
+  background: #128C7E;
+}
+.btn-whats-app:hover {
+  background: #0f7a6e;
+  box-shadow: 0 4px 14px rgba(18,140,126,0.35);
 }

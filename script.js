@@ -5,7 +5,7 @@
 
 // ─── GOOGLE APPS SCRIPT CONFIGURATION ───
 // Substitua pela URL gerada no deploy do seu Apps Script
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyOidyphJDQe3OEscxcmZGyXJNJ91S_Ku8E3eTPd6Zjadgn-SmOf1c0F8LR8lls7Z6L/exec";
+const WEBAPP_URL = "COLOCAR_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
 
 // ─── APP STATE ───
 const App = {
@@ -1055,3 +1055,267 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+
+// ═══════════════════════════════════════════
+// IMPRIMIR / SALVAR PDF
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  $('btn-print-pdf') && $('btn-print-pdf').addEventListener('click', printExecutivePDF);
+  $('btn-whatsapp') && $('btn-whatsapp').addEventListener('click', openWhatsModal);
+  $('whats-close') && $('whats-close').addEventListener('click', closeWhatsModal);
+  $('modal-whats') && $('modal-whats').addEventListener('click', e => {
+    if (e.target === $('modal-whats')) closeWhatsModal();
+  });
+  $('whats-copy') && $('whats-copy').addEventListener('click', copyWhatsText);
+  $('whats-send-web') && $('whats-send-web').addEventListener('click', sendWhatsWeb);
+  $('whats-send-app') && $('whats-send-app').addEventListener('click', sendWhatsApp);
+  $('whats-text') && $('whats-text').addEventListener('input', updateCharCount);
+});
+
+function getExecutiveText() {
+  return $('executive-summary-box').innerText || $('executive-summary-box').textContent || '';
+}
+
+function hasExecutiveSummary() {
+  const text = getExecutiveText().trim();
+  return text.length > 10 && !text.includes('Preencha os dados');
+}
+
+// ─── PDF via janela de impressão ───
+function printExecutivePDF() {
+  if (!hasExecutiveSummary()) {
+    showToast('Gere o resumo executivo antes de imprimir.', 'error');
+    return;
+  }
+
+  const area = $('f-area').value || '—';
+  const turno = $('f-turno').value || '—';
+  const user = App.currentUser?.name || '—';
+  const now = new Date();
+  const dateStr = formatDate(now);
+  const text = getExecutiveText();
+
+  // Constrói HTML para impressão
+  const printHTML = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Resumo Executivo — ${area} ${turno} — ${dateStr}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #fff;
+      color: #111;
+      padding: 2.5cm 2cm;
+      font-size: 11pt;
+      line-height: 1.7;
+    }
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 3px solid #EE4D2D;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-box {
+      width: 40px; height: 40px;
+      background: #EE4D2D;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 18px; font-weight: 900;
+    }
+    .logo-name { font-size: 14pt; font-weight: 800; color: #EE4D2D; }
+    .logo-sub { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+    .meta-block { text-align: right; font-size: 9pt; color: #555; line-height: 1.6; }
+    .tag {
+      display: inline-block;
+      background: #EE4D2D;
+      color: white;
+      font-size: 8pt;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    h1 {
+      font-size: 16pt;
+      font-weight: 800;
+      color: #111;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .subtitle {
+      font-size: 10pt;
+      color: #666;
+      margin-bottom: 24px;
+    }
+    .summary-box {
+      background: #f9f9f9;
+      border: 1px solid #e5e5e5;
+      border-left: 4px solid #EE4D2D;
+      border-radius: 6px;
+      padding: 20px 24px;
+      white-space: pre-wrap;
+      font-size: 10.5pt;
+      line-height: 1.8;
+      color: #222;
+    }
+    .footer {
+      margin-top: 36px;
+      padding-top: 14px;
+      border-top: 1px solid #ddd;
+      font-size: 8.5pt;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+    }
+    @media print {
+      body { padding: 1.5cm 1.5cm; }
+      @page { margin: 1.5cm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-box">S</div>
+      <div>
+        <div class="logo-name">Shopee</div>
+        <div class="logo-sub">Fulfillment</div>
+      </div>
+    </div>
+    <div class="meta-block">
+      <div><strong>Data:</strong> ${dateStr}</div>
+      <div><strong>Responsável:</strong> ${user}</div>
+      <div><strong>Área:</strong> ${area} &nbsp;|&nbsp; <strong>Turno:</strong> ${turno}</div>
+    </div>
+  </div>
+
+  <div class="tag">Resumo Executivo</div>
+  <h1>${area} — Turno ${turno}</h1>
+  <p class="subtitle">Gerado automaticamente pelo Painel Operacional Shopee Fulfillment</p>
+
+  <div class="summary-box">${escapeHtml(text)}</div>
+
+  <div class="footer">
+    <span>Shopee Fulfillment — Painel Operacional</span>
+    <span>${dateStr} &nbsp;·&nbsp; ${user}</span>
+  </div>
+
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const frame = $('print-frame');
+  frame.contentDocument.open();
+  frame.contentDocument.write(printHTML);
+  frame.contentDocument.close();
+  showToast('Abrindo janela de impressão / salvar PDF…', 'success');
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ═══════════════════════════════════════════
+// WHATSAPP MODAL
+// ═══════════════════════════════════════════
+function openWhatsModal() {
+  if (!hasExecutiveSummary()) {
+    showToast('Gere o resumo executivo antes de compartilhar.', 'error');
+    return;
+  }
+
+  const area = $('f-area').value || '—';
+  const turno = $('f-turno').value || '—';
+  const user = App.currentUser?.name || '—';
+  const now = new Date();
+
+  // Formata mensagem otimizada para WhatsApp
+  const rawText = getExecutiveText().trim();
+  const lines = rawText.split('\n').filter(l => l.trim());
+
+  const msg = [
+    `🛒 *SHOPEE FULFILLMENT*`,
+    `📋 *${area} | ${turno}* — ${formatDate(now)}`,
+    `👤 ${user}`,
+    ``,
+    ...lines.map(l => {
+      // Converte emojis de status para texto bold no WA
+      return l.replace(/^(📋|🏭|📥|📦|✅)\s+/, '').trim();
+    }),
+    ``,
+    `_Gerado via Painel Operacional · ${formatDate(now)} ${formatTime(now)}_`,
+  ].join('\n');
+
+  $('whats-text').value = msg;
+  updateCharCount();
+  $('modal-whats').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => $('whats-text').focus(), 100);
+}
+
+function closeWhatsModal() {
+  $('modal-whats').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function updateCharCount() {
+  const len = $('whats-text').value.length;
+  const el = $('whats-char-count');
+  el.textContent = `${len.toLocaleString('pt-BR')} caractere${len !== 1 ? 's' : ''}`;
+  el.style.color = len > 4000 ? 'var(--yellow)' : 'var(--text-muted)';
+}
+
+function getWhatsMessage() {
+  return $('whats-text').value.trim();
+}
+
+function copyWhatsText() {
+  const text = getWhatsMessage();
+  if (!text) return;
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Texto copiado para a área de transferência!', 'success'))
+    .catch(() => {
+      // Fallback para browsers sem clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Texto copiado!', 'success');
+    });
+}
+
+function sendWhatsWeb() {
+  const text = getWhatsMessage();
+  if (!text) return;
+  const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+  closeWhatsModal();
+}
+
+function sendWhatsApp() {
+  const text = getWhatsMessage();
+  if (!text) return;
+  // wa.me funciona tanto no celular (abre app) quanto no desktop (abre web)
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+  closeWhatsModal();
+}
