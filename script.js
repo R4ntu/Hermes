@@ -256,8 +256,29 @@ function updateBar(key) {
 // ═══════════════════════════════════════════
 // RESUMO EXECUTIVO AUTOMÁTICO
 // ═══════════════════════════════════════════
+
+// Helpers para formatação executiva
+function kpi(label, real, meta, lowerIsBetter = false) {
+  if (!real && !meta) return null;
+  const r = parseFloat(real);
+  const m = parseFloat(meta);
+  const ok = lowerIsBetter ? r <= m : r >= m;
+  const icon = ok ? '✅' : '⚠️';
+  if (meta) return `• ${label}: ${real}% / meta ${meta}% ${icon}`;
+  return `• ${label}: ${real}%`;
+}
+
+function labor(label, start, oficial, realizado) {
+  const parts = [];
+  if (start)     parts.push(`Start ${start}`);
+  if (oficial)   parts.push(`Oficial ${oficial}`);
+  if (realizado) parts.push(`Realizado ${realizado}`);
+  if (!parts.length) return null;
+  return `• ${label}: ${parts.join(' · ')}`;
+}
+
 function generateExecutiveSummary() {
-  const area = $('f-area').value;
+  const area  = $('f-area').value;
   const turno = $('f-turno').value;
 
   if (!area || !turno) {
@@ -265,166 +286,87 @@ function generateExecutiveSummary() {
     return;
   }
 
-  let parts = [];
-  const areaLabel = area;
   const now = new Date();
+  const lines = [];
 
-  parts.push(`📋 Resumo Executivo — ${areaLabel} | ${turno} | ${formatDate(now)}`);
-  parts.push('');
+  // ── Cabeçalho ──
+  lines.push(`Resumo Executivo — ${area} | ${turno} | ${formatDate(now)}`);
+  lines.push('');
 
   if (area === 'Outbound') {
-    const ckStart = $('ob-ck-start').value;
-    const ckOficial = $('ob-ck-oficial').value;
-    const ckReal = $('ob-ck-realizado').value;
-    const pkStart = $('ob-pk-start').value;
-    const pkOficial = $('ob-pk-oficial').value;
-    const pkReal = $('ob-pk-realizado').value;
+    lines.push(`OUTBOUND — Turno ${turno}`);
+    lines.push('');
 
-    const netMeta = $('ob-net-meta').value;
-    const netReal = $('ob-net-real').value;
-    const cotMeta = $('ob-cot-meta').value;
-    const cotReal = $('ob-cot-real').value;
-    const absMeta = $('ob-abs-meta').value;
-    const absReal = $('ob-abs-real').value;
-    const idleMeta = $('ob-idle-meta').value;
-    const idleReal = $('ob-idle-real').value;
-    const fsMeta = $('ob-fs-meta').value;
-    const fsReal = $('ob-fs-real').value;
-    const sfMeta = $('ob-sf-meta').value;
-    const sfReal = $('ob-sf-real').value;
+    // Labor — só números, sem contextualização
+    const ck = labor('Checking', $('ob-ck-start').value, $('ob-ck-oficial').value, $('ob-ck-realizado').value);
+    const pk = labor('Picking',  $('ob-pk-start').value, $('ob-pk-oficial').value, $('ob-pk-realizado').value);
+    if (ck) lines.push(ck);
+    if (pk) lines.push(pk);
 
-    parts.push(`🏭 OUTBOUND — Turno ${turno}`);
-    parts.push('');
+    if (ck || pk) lines.push('');
 
-    if (pkOficial && pkReal) {
-      const pkPct = pkOficial > 0 ? Math.round((pkReal / pkOficial) * 100) : 0;
-      parts.push(`• Picking: ${pkReal} colaboradores realizados de um quadro oficial de ${pkOficial} (${pkPct}% do estrutural). Labor Start: ${pkStart || 'não informado'}.`);
-    }
+    // KPIs
+    const net = kpi('NET',          $('ob-net-real').value,  $('ob-net-meta').value);
+    const cot = kpi('COT',          $('ob-cot-real').value,  $('ob-cot-meta').value);
+    const abs = kpi('ABS',          $('ob-abs-real').value,  $('ob-abs-meta').value,  true);
+    const idl = kpi('Idle',         $('ob-idle-real').value, $('ob-idle-meta').value, true);
+    const fs  = kpi('Fast Start',   $('ob-fs-real').value,   $('ob-fs-meta').value);
+    const sf  = kpi('Strong Finish',$('ob-sf-real').value,   $('ob-sf-meta').value);
 
-    if (ckOficial && ckReal) {
-      parts.push(`• Checking: ${ckReal} colaboradores realizados, estrutura oficial de ${ckOficial}.`);
-    }
-
-    if (netMeta && netReal) {
-      const netStatus = parseFloat(netReal) >= parseFloat(netMeta) ? '✅ dentro do esperado' : '⚠️ abaixo da meta';
-      parts.push(`• NET: ${netReal}% realizado frente à meta de ${netMeta}% — ${netStatus}.`);
-    }
-
-    if (cotMeta && cotReal) {
-      const cotStatus = parseFloat(cotReal) >= parseFloat(cotMeta) ? '✅ dentro do esperado' : '⚠️ abaixo da meta';
-      parts.push(`• COT: ${cotReal}% realizado frente à meta de ${cotMeta}% — ${cotStatus}.`);
-    }
-
-    if (absMeta && absReal) {
-      const absStatus = parseFloat(absReal) <= parseFloat(absMeta) ? '✅ controlado' : '⚠️ acima do limite';
-      parts.push(`• Absenteísmo (ABS): ${absReal}% (meta ≤ ${absMeta}%) — ${absStatus}.`);
-    }
-
-    if (idleMeta && idleReal) {
-      const idleStatus = parseFloat(idleReal) <= parseFloat(idleMeta) ? '✅ controlado' : '⚠️ acima do limite';
-      parts.push(`• Ociosidade (Idle): ${idleReal}% (meta ≤ ${idleMeta}%) — ${idleStatus}.`);
-    }
-
-    if (fsMeta && fsReal) {
-      const fsStatus = parseFloat(fsReal) >= parseFloat(fsMeta) ? '✅ atingido' : '⚠️ não atingido';
-      parts.push(`• Fast Start: ${fsReal}% (meta ${fsMeta}%) — ${fsStatus}.`);
-    }
-
-    if (sfMeta && sfReal) {
-      const sfStatus = parseFloat(sfReal) >= parseFloat(sfMeta) ? '✅ atingido' : '⚠️ não atingido';
-      parts.push(`• Strong Finish: ${sfReal}% (meta ${sfMeta}%) — ${sfStatus}.`);
-    }
+    [net, cot, abs, idl, fs, sf].forEach(l => { if (l) lines.push(l); });
 
   } else if (area === 'Inbound') {
-    const ptOficial = $('ib-pt-oficial').value;
-    const ptReal = $('ib-pt-realizado').value;
-    const olaMeta = $('ib-ola-meta').value;
-    const olaReal = $('ib-ola-real').value;
-    const absMeta = $('ib-abs-meta').value;
-    const absReal = $('ib-abs-real').value;
-    const idleMeta = $('ib-idle-meta').value;
-    const idleReal = $('ib-idle-real').value;
+    lines.push(`INBOUND — Turno ${turno}`);
+    lines.push('');
 
-    parts.push(`📥 INBOUND — Turno ${turno}`);
-    parts.push('');
+    const pt = labor('Putaway', $('ib-pt-start').value, $('ib-pt-oficial').value, $('ib-pt-realizado').value);
+    if (pt) { lines.push(pt); lines.push(''); }
 
-    if (ptOficial && ptReal) {
-      parts.push(`• Putaway: ${ptReal} colaboradores realizados de ${ptOficial} oficiais.`);
-    }
+    const ola = kpi('OLA',  $('ib-ola-real').value,  $('ib-ola-meta').value);
+    const abs = kpi('ABS',  $('ib-abs-real').value,  $('ib-abs-meta').value,  true);
+    const idl = kpi('Idle', $('ib-idle-real').value, $('ib-idle-meta').value, true);
 
-    if (olaMeta && olaReal) {
-      const olaStatus = parseFloat(olaReal) >= parseFloat(olaMeta) ? '✅ dentro do SLA' : '⚠️ abaixo do SLA';
-      parts.push(`• OLA: ${olaReal}% (meta ${olaMeta}%) — ${olaStatus}.`);
-    }
-
-    if (absMeta && absReal) {
-      const absStatus = parseFloat(absReal) <= parseFloat(absMeta) ? '✅ controlado' : '⚠️ acima do limite';
-      parts.push(`• ABS: ${absReal}% (meta ≤ ${absMeta}%) — ${absStatus}.`);
-    }
-
-    if (idleMeta && idleReal) {
-      const idleStatus = parseFloat(idleReal) <= parseFloat(idleMeta) ? '✅ controlado' : '⚠️ acima do limite';
-      parts.push(`• Idle: ${idleReal}% (meta ≤ ${idleMeta}%) — ${idleStatus}.`);
-    }
+    [ola, abs, idl].forEach(l => { if (l) lines.push(l); });
 
   } else if (area === 'Inventário') {
-    const prodStart = $('inv-prod-start').value;
-    const prodReal = $('inv-prod-realizado').value;
-    const rtsStart = $('inv-rts-start').value;
-    const rtsReal = $('inv-rts-realizado').value;
-    const avMeta = $('inv-av-meta').value;
-    const avReal = $('inv-av-real').value;
+    lines.push(`INVENTÁRIO — Turno ${turno}`);
+    lines.push('');
 
-    parts.push(`📦 INVENTÁRIO — Turno ${turno}`);
-    parts.push('');
+    const prod = labor('Produtividade', $('inv-prod-start').value, null, $('inv-prod-realizado').value);
+    const rts  = labor('RTS',           $('inv-rts-start').value,  null, $('inv-rts-realizado').value);
+    if (prod) lines.push(prod);
+    if (rts)  lines.push(rts);
+    if (prod || rts) lines.push('');
 
-    if (prodReal) parts.push(`• Produtividade: ${prodReal} colaboradores realizados (start: ${prodStart || 'n/i'}).`);
-    if (rtsReal) parts.push(`• RTS: ${rtsReal} colaboradores realizados (start: ${rtsStart || 'n/i'}).`);
-
-    if (avMeta && avReal) {
-      const avStatus = parseFloat(avReal) >= parseFloat(avMeta) ? '✅ dentro do esperado' : '⚠️ abaixo da meta';
-      parts.push(`• AV (Acurácia): ${avReal}% (meta ${avMeta}%) — ${avStatus}.`);
-    }
+    const av = kpi('AV', $('inv-av-real').value, $('inv-av-meta').value);
+    if (av) lines.push(av);
 
   } else if (area === 'Qualidade') {
-    const prodStart = $('qual-prod-start').value;
-    const prodReal = $('qual-prod-realizado').value;
-    const rrMeta = $('qual-rr-meta').value;
-    const rrReal = $('qual-rr-real').value;
-    const olaMeta = $('qual-ola-meta').value;
-    const olaReal = $('qual-ola-real').value;
+    lines.push(`QUALIDADE — Turno ${turno}`);
+    lines.push('');
 
-    parts.push(`✅ QUALIDADE — Turno ${turno}`);
-    parts.push('');
+    const prod = labor('Produtividade', $('qual-prod-start').value, null, $('qual-prod-realizado').value);
+    if (prod) { lines.push(prod); lines.push(''); }
 
-    if (prodReal) parts.push(`• Produtividade: ${prodReal} colaboradores realizados (start: ${prodStart || 'n/i'}).`);
-
-    if (rrMeta && rrReal) {
-      const rrStatus = parseFloat(rrReal) <= parseFloat(rrMeta) ? '✅ controlado' : '⚠️ acima do limite';
-      parts.push(`• Rework Rate (RR): ${rrReal}% (meta ≤ ${rrMeta}%) — ${rrStatus}.`);
-    }
-
-    if (olaMeta && olaReal) {
-      const olaStatus = parseFloat(olaReal) >= parseFloat(olaMeta) ? '✅ dentro do SLA' : '⚠️ abaixo do SLA';
-      parts.push(`• OLA RI: ${olaReal}% (meta ${olaMeta}%) — ${olaStatus}.`);
-    }
+    const rr  = kpi('RR',     $('qual-rr-real').value,  $('qual-rr-meta').value,  true);
+    const ola = kpi('OLA RI', $('qual-ola-real').value, $('qual-ola-meta').value);
+    [rr, ola].forEach(l => { if (l) lines.push(l); });
   }
 
-  // Contexto operacional
-  const riscos = $('resumo-riscos').value.trim();
+  // ── Riscos e próximo turno ──
+  const riscos  = $('resumo-riscos').value.trim();
   const proximo = $('resumo-proximo').value.trim();
 
-  parts.push('');
-  if (riscos) parts.push(`⚠️ Riscos: ${riscos}`);
-  else parts.push('⚠️ Riscos: Nenhum risco crítico identificado para o próximo turno.');
+  lines.push('');
+  lines.push(riscos  ? `⚠️ Riscos: ${riscos}` : '⚠️ Riscos: Nenhum risco crítico identificado.');
+  if (proximo) lines.push(`🔜 Próximo turno: ${proximo}`);
 
-  if (proximo) parts.push(`🔜 Próximo turno: ${proximo}`);
+  lines.push('');
+  lines.push(`— ${App.currentUser?.name || 'Usuário'} · ${formatDate(now)} ${formatTime(now)}`);
 
-  parts.push('');
-  parts.push(`— Gerado automaticamente · ${App.currentUser?.name || 'Usuário'} · ${formatDate(now)} ${formatTime(now)}`);
-
-  $('executive-summary-box').innerHTML = `<pre style="white-space:pre-wrap;font-family:var(--font-body);font-size:0.9rem;line-height:1.75;">${parts.join('\n')}</pre>`;
-  showToast('Resumo executivo gerado com sucesso!', 'success');
+  $('executive-summary-box').innerHTML =
+    `<pre style="white-space:pre-wrap;font-family:var(--font-body);font-size:0.9rem;line-height:1.75;">${lines.join('\n')}</pre>`;
+  showToast('Resumo executivo gerado!', 'success');
 }
 
 // ═══════════════════════════════════════════
@@ -1246,19 +1188,28 @@ function openWhatsModal() {
 
   // Formata mensagem otimizada para WhatsApp
   const rawText = getExecutiveText().trim();
-  const lines = rawText.split('\n').filter(l => l.trim());
+  const lines = rawText.split('\n');
+
+  // Converte o resumo para formatação WhatsApp (*bold*, _italic_)
+  const waLines = lines.map(l => {
+    const trimmed = l.trim();
+    if (!trimmed) return '';
+    // Primeira linha (cabeçalho) → negrito
+    if (trimmed.startsWith('Resumo Executivo')) return `*${trimmed}*`;
+    // Linhas de seção em maiúsculas (OUTBOUND, INBOUND…) → negrito
+    if (/^[A-ZÇÃÕÁÉÍÓÚ\s—]+$/.test(trimmed) && trimmed.length > 2) return `*${trimmed}*`;
+    // Linhas de KPI/labor (começam com •) → manter como estão
+    return trimmed;
+  });
 
   const msg = [
     `🛒 *SHOPEE FULFILLMENT*`,
-    `📋 *${area} | ${turno}* — ${formatDate(now)}`,
+    `*${area} | ${turno}* — ${formatDate(now)}`,
     `👤 ${user}`,
     ``,
-    ...lines.map(l => {
-      // Converte emojis de status para texto bold no WA
-      return l.replace(/^(📋|🏭|📥|📦|✅)\s+/, '').trim();
-    }),
+    ...waLines,
     ``,
-    `_Gerado via Painel Operacional · ${formatDate(now)} ${formatTime(now)}_`,
+    `_Painel Operacional · ${formatDate(now)} ${formatTime(now)}_`,
   ].join('\n');
 
   $('whats-text').value = msg;
