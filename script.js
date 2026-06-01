@@ -5,7 +5,7 @@
 
 // ─── GOOGLE APPS SCRIPT CONFIGURATION ───
 // Substitua pela URL gerada no deploy do seu Apps Script
-const WEBAPP_URL = "COLOCAR_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyOidyphJDQe3OEscxcmZGyXJNJ91S_Ku8E3eTPd6Zjadgn-SmOf1c0F8LR8lls7Z6L/exec";
 
 // ─── APP STATE ───
 const App = {
