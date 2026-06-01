@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopee Fulfillment — Painel Operacional</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     TELA DE LOGIN
+═══════════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-bg">
+    <div class="login-grid-overlay"></div>
+    <div class="login-glow"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#EE4D2D"/>
+          <path d="M8 22L14 10L20 22M11 18H17" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="23" cy="11" r="3" fill="white"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-shopee">Shopee</span>
+        <span class="logo-fulfillment">Fulfillment</span>
+      </div>
+    </div>
+    <h1 class="login-title">Painel Operacional</h1>
+    <p class="login-subtitle">Acesse com suas credenciais para registrar o turno</p>
+    <div class="login-form">
+      <div class="field-group">
+        <label for="login-name">Nome completo</label>
+        <input type="text" id="login-name" placeholder="Seu nome" autocomplete="name" />
+      </div>
+      <div class="field-group">
+        <label for="login-email">E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@shopee.com" autocomplete="email" />
+      </div>
+      <button class="btn-primary btn-full" id="btn-login">
+        <span>Entrar</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="login-meta" id="login-meta-info"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     APP PRINCIPAL
+═══════════════════════════════════════════ -->
+<div id="screen-app" class="screen">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#EE4D2D"/>
+          <path d="M8 22L14 10L20 22M11 18H17" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="23" cy="11" r="3" fill="white"/>
+        </svg>
+        <div>
+          <div class="sidebar-brand">Shopee</div>
+          <div class="sidebar-subbrand">Fulfillment</div>
+        </div>
+      </div>
+      <button class="sidebar-close" id="sidebar-close">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="form">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="2" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="10" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="10" y="10" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+        Registro de Turno
+      </button>
+      <button class="nav-item" data-view="history">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M9 5V9.5L12 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Histórico
+      </button>
+      <button class="nav-item" data-view="dashboard">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 14L6 9L9.5 12L13 7L16 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 16H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Dashboard
+      </button>
+    </nav>
+
+    <div class="sidebar-user" id="sidebar-user">
+      <div class="user-avatar" id="user-avatar-sidebar">R</div>
+      <div class="user-info">
+        <div class="user-name" id="user-name-sidebar">—</div>
+        <div class="user-email" id="user-email-sidebar">—</div>
+      </div>
+      <button class="btn-logout" id="btn-logout" title="Sair">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- OVERLAY MOBILE -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="hamburger" id="hamburger">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-title" id="topbar-title">Registro de Turno</div>
+      <div class="topbar-right">
+        <div class="topbar-datetime" id="topbar-datetime"></div>
+        <div class="topbar-user-badge" id="topbar-user-badge">
+          <div class="user-avatar sm" id="user-avatar-top">R</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ VIEW: FORMULÁRIO ═══ -->
+    <div id="view-form" class="view active">
+      <div class="view-container">
+
+        <!-- HEADER FORM -->
+        <div class="section-header">
+          <h2>Registro de Turno</h2>
+          <p>Preencha os indicadores operacionais do turno atual</p>
+        </div>
+
+        <!-- IDENTIFICAÇÃO -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon orange">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1a3 3 0 100 6 3 3 0 000-6zM2 14a6 6 0 0112 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <span>Identificação</span>
+          </div>
+          <div class="card-body">
+            <div class="field-row two-cols">
+              <div class="field-group">
+                <label for="f-area">Área</label>
+                <select id="f-area">
+                  <option value="">Selecione a área</option>
+                  <option value="Outbound">Outbound</option>
+                  <option value="Inbound">Inbound</option>
+                  <option value="Inventário">Inventário</option>
+                  <option value="Qualidade">Qualidade</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="f-turno">Turno</label>
+                <select id="f-turno">
+                  <option value="">Selecione o turno</option>
+                  <option value="T1">T1 — Manhã</option>
+                  <option value="T2">T2 — Tarde</option>
+                  <option value="T3">T3 — Noite</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── OUTBOUND ─── -->
+        <div id="section-outbound" class="area-section hidden">
+          <div class="area-badge outbound">OUTBOUND</div>
+
+          <!-- Checking -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon blue">📋</div>
+              <span>Checking — Labor</span>
+            </div>
+            <div class="card-body">
+              <div class="field-row three-cols">
+                <div class="field-group">
+                  <label>Labor Start</label>
+                  <input type="number" id="ob-ck-start" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Oficial</label>
+                  <input type="number" id="ob-ck-oficial" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Realizado</label>
+                  <input type="number" id="ob-ck-realizado" placeholder="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Picking -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon blue">📦</div>
+              <span>Picking — Labor</span>
+            </div>
+            <div class="card-body">
+              <div class="field-row three-cols">
+                <div class="field-group">
+                  <label>Labor Start</label>
+                  <input type="number" id="ob-pk-start" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Oficial</label>
+                  <input type="number" id="ob-pk-oficial" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Realizado</label>
+                  <input type="number" id="ob-pk-realizado" placeholder="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicadores OB -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon orange">📊</div>
+              <span>Indicadores Outbound</span>
+            </div>
+            <div class="card-body">
+              <div class="indicators-grid">
+                <div class="indicator-pair" data-label="NET">
+                  <div class="indicator-label">NET <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ob-net-meta" placeholder="95" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ob-net-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ob-net"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="COT">
+                  <div class="indicator-label">COT <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ob-cot-meta" placeholder="98" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ob-cot-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ob-cot"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="ABS">
+                  <div class="indicator-label">ABS <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ob-abs-meta" placeholder="5" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ob-abs-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ob-abs"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="Idle">
+                  <div class="indicator-label">Idle <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ob-idle-meta" placeholder="5" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ob-idle-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ob-idle"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="Fast Start">
+                  <div class="indicator-label">Fast Start <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ob-fs-meta" placeholder="90" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ob-fs-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ob-fs"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="Strong Finish">
+                  <div class="indicator-label">Strong Finish <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ob-sf-meta" placeholder="90" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ob-sf-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ob-sf"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── INBOUND ─── -->
+        <div id="section-inbound" class="area-section hidden">
+          <div class="area-badge inbound">INBOUND</div>
+
+          <!-- Putaway -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon green">🏪</div>
+              <span>Putaway — Labor</span>
+            </div>
+            <div class="card-body">
+              <div class="field-row three-cols">
+                <div class="field-group">
+                  <label>Labor Start</label>
+                  <input type="number" id="ib-pt-start" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Oficial</label>
+                  <input type="number" id="ib-pt-oficial" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Realizado</label>
+                  <input type="number" id="ib-pt-realizado" placeholder="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicadores IB -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon orange">📊</div>
+              <span>Indicadores Inbound</span>
+            </div>
+            <div class="card-body">
+              <div class="indicators-grid">
+                <div class="indicator-pair" data-label="OLA">
+                  <div class="indicator-label">OLA <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ib-ola-meta" placeholder="95" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ib-ola-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ib-ola"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="ABS">
+                  <div class="indicator-label">ABS <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ib-abs-meta" placeholder="5" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ib-abs-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ib-abs"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="Idle">
+                  <div class="indicator-label">Idle <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="ib-idle-meta" placeholder="5" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="ib-idle-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-ib-idle"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── INVENTÁRIO ─── -->
+        <div id="section-inventario" class="area-section hidden">
+          <div class="area-badge inventario">INVENTÁRIO</div>
+
+          <!-- Produtividade Inv -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon purple">📈</div>
+              <span>Produtividade</span>
+            </div>
+            <div class="card-body">
+              <div class="field-row two-cols">
+                <div class="field-group">
+                  <label>Labor Start</label>
+                  <input type="number" id="inv-prod-start" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Realizado</label>
+                  <input type="number" id="inv-prod-realizado" placeholder="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AV -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon orange">📊</div>
+              <span>AV — Acurácia de Verificação</span>
+            </div>
+            <div class="card-body">
+              <div class="indicators-grid">
+                <div class="indicator-pair" data-label="AV">
+                  <div class="indicator-label">AV <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="inv-av-meta" placeholder="99" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="inv-av-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-inv-av"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RTS -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon purple">🔄</div>
+              <span>RTS — Return to Stock</span>
+            </div>
+            <div class="card-body">
+              <div class="field-row two-cols">
+                <div class="field-group">
+                  <label>Labor Start</label>
+                  <input type="number" id="inv-rts-start" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Realizado</label>
+                  <input type="number" id="inv-rts-realizado" placeholder="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── QUALIDADE ─── -->
+        <div id="section-qualidade" class="area-section hidden">
+          <div class="area-badge qualidade">QUALIDADE</div>
+
+          <!-- Produtividade Qual -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon yellow">✅</div>
+              <span>Produtividade</span>
+            </div>
+            <div class="card-body">
+              <div class="field-row two-cols">
+                <div class="field-group">
+                  <label>Labor Start</label>
+                  <input type="number" id="qual-prod-start" placeholder="0" min="0" />
+                </div>
+                <div class="field-group">
+                  <label>Labor Realizado</label>
+                  <input type="number" id="qual-prod-realizado" placeholder="0" min="0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicadores Qual -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon orange">📊</div>
+              <span>Indicadores Qualidade</span>
+            </div>
+            <div class="card-body">
+              <div class="indicators-grid">
+                <div class="indicator-pair" data-label="RR">
+                  <div class="indicator-label">RR — Rework Rate <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="qual-rr-meta" placeholder="2" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="qual-rr-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-qual-rr"></div></div>
+                </div>
+                <div class="indicator-pair" data-label="OLA RI">
+                  <div class="indicator-label">OLA RI <span class="unit">%</span></div>
+                  <div class="field-row two-cols">
+                    <div class="field-group"><label>Meta</label><input type="number" id="qual-ola-meta" placeholder="95" min="0" max="100"/></div>
+                    <div class="field-group"><label>Real</label><input type="number" id="qual-ola-real" placeholder="0" min="0" max="100"/></div>
+                  </div>
+                  <div class="indicator-bar-wrap"><div class="indicator-bar" id="bar-qual-ola"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESUMO OPERACIONAL -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon orange">📝</div>
+            <span>Resumo Operacional</span>
+          </div>
+          <div class="card-body">
+            <div class="field-group">
+              <label for="resumo-resultados">Principais resultados do turno</label>
+              <textarea id="resumo-resultados" rows="3" placeholder="Descreva os principais resultados alcançados..."></textarea>
+            </div>
+            <div class="field-group">
+              <label for="resumo-problemas">Problemas encontrados</label>
+              <textarea id="resumo-problemas" rows="3" placeholder="Relate os principais problemas identificados..."></textarea>
+            </div>
+            <div class="field-group">
+              <label for="resumo-acoes">Ações tomadas</label>
+              <textarea id="resumo-acoes" rows="3" placeholder="Descreva as ações corretivas adotadas..."></textarea>
+            </div>
+            <div class="field-group">
+              <label for="resumo-riscos">Riscos</label>
+              <textarea id="resumo-riscos" rows="2" placeholder="Liste os riscos identificados..."></textarea>
+            </div>
+            <div class="field-group">
+              <label for="resumo-proximo">Plano para próximo turno</label>
+              <textarea id="resumo-proximo" rows="3" placeholder="Indique os pontos de atenção para o próximo turno..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESUMO EXECUTIVO AUTOMÁTICO -->
+        <div class="card card-executive">
+          <div class="card-header">
+            <div class="card-icon orange">🤖</div>
+            <span>Resumo Executivo Automático</span>
+            <button class="btn-ghost btn-sm" id="btn-generate-exec">Gerar Resumo</button>
+          </div>
+          <div class="card-body">
+            <div id="executive-summary-box" class="executive-box">
+              <p class="placeholder-text">Preencha os dados do formulário e clique em <strong>Gerar Resumo</strong> para criar o resumo executivo automaticamente.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AÇÕES -->
+        <div class="form-actions">
+          <button class="btn-secondary" id="btn-clear">Limpar formulário</button>
+          <button class="btn-primary btn-large" id="btn-save">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 10V13a1 1 0 001 1h10a1 1 0 001-1V10M8 2v8M5 5l3-3 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Salvar Registro
+          </button>
+        </div>
+
+        <!-- STATUS MESSAGE -->
+        <div id="save-status" class="save-status hidden"></div>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW: HISTÓRICO ═══ -->
+    <div id="view-history" class="view">
+      <div class="view-container">
+        <div class="section-header">
+          <h2>Histórico de Registros</h2>
+          <p>Todos os turnos registrados neste dispositivo</p>
+        </div>
+
+        <div class="history-toolbar">
+          <input type="text" id="history-search" placeholder="Buscar por usuário, área ou turno..." class="search-input" />
+          <div class="filter-chips" id="filter-chips">
+            <button class="chip active" data-filter="all">Todos</button>
+            <button class="chip" data-filter="Outbound">Outbound</button>
+            <button class="chip" data-filter="Inbound">Inbound</button>
+            <button class="chip" data-filter="Inventário">Inventário</button>
+            <button class="chip" data-filter="Qualidade">Qualidade</button>
+          </div>
+        </div>
+
+        <div id="history-count" class="history-count"></div>
+        <div id="history-table-wrap" class="table-wrap">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Hora</th>
+                <th>Usuário</th>
+                <th>Área</th>
+                <th>Turno</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+          <div id="history-empty" class="empty-state hidden">
+            <div class="empty-icon">📋</div>
+            <p>Nenhum registro encontrado</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW: DASHBOARD ═══ -->
+    <div id="view-dashboard" class="view">
+      <div class="view-container">
+        <div class="section-header">
+          <h2>Dashboard Operacional</h2>
+          <p>Visão consolidada dos indicadores</p>
+        </div>
+
+        <!-- KPI CARDS -->
+        <div class="kpi-row" id="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-label">Total de Registros</div>
+          </div>
+          <div class="kpi-card kpi-outbound">
+            <div class="kpi-value" id="kpi-outbound">0</div>
+            <div class="kpi-label">Outbound</div>
+          </div>
+          <div class="kpi-card kpi-inbound">
+            <div class="kpi-value" id="kpi-inbound">0</div>
+            <div class="kpi-label">Inbound</div>
+          </div>
+          <div class="kpi-card kpi-inventario">
+            <div class="kpi-value" id="kpi-inventario">0</div>
+            <div class="kpi-label">Inventário</div>
+          </div>
+          <div class="kpi-card kpi-qualidade">
+            <div class="kpi-value" id="kpi-qualidade">0</div>
+            <div class="kpi-label">Qualidade</div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW 1 -->
+        <div class="charts-row">
+          <div class="card chart-card">
+            <div class="card-header">
+              <div class="card-icon orange">📊</div>
+              <span>Registros por Área</span>
+            </div>
+            <div class="card-body chart-body">
+              <canvas id="chart-area"></canvas>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <div class="card-header">
+              <div class="card-icon orange">🕐</div>
+              <span>Registros por Turno</span>
+            </div>
+            <div class="card-body chart-body">
+              <canvas id="chart-turno"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW 2 -->
+        <div class="charts-row">
+          <div class="card chart-card chart-wide">
+            <div class="card-header">
+              <div class="card-icon orange">📈</div>
+              <span>Indicadores Outbound — Média Meta vs Real</span>
+            </div>
+            <div class="card-body chart-body">
+              <canvas id="chart-outbound-indicators"></canvas>
+            </div>
+          </div>
+          <div class="card chart-card">
+            <div class="card-header">
+              <div class="card-icon green">🎯</div>
+              <span>Indicadores Inbound</span>
+            </div>
+            <div class="card-body chart-body">
+              <canvas id="chart-inbound-indicators"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- TIMELINE -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon orange">🕐</div>
+            <span>Últimos 10 Registros</span>
+          </div>
+          <div class="card-body">
+            <div id="timeline" class="timeline"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══ MODAL DE DETALHES ═══ -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Detalhes do Registro</h3>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-danger btn-sm" id="modal-delete">Excluir Registro</button>
+      <button class="btn-primary btn-sm" id="modal-close-btn">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
