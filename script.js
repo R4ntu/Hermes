@@ -5,7 +5,7 @@
 
 // ─── GOOGLE APPS SCRIPT CONFIGURATION ───
 // Substitua pela URL gerada no deploy do seu Apps Script
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyOidyphJDQe3OEscxcmZGyXJNJ91S_Ku8E3eTPd6Zjadgn-SmOf1c0F8LR8lls7Z6L/exec";
+const WEBAPP_URL = "COLOCAR_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
 
 // ─── APP STATE ───
 const App = {
@@ -240,8 +240,8 @@ function updateBar(key) {
   bar.className = 'indicator-bar';
   const ratio = meta > 0 ? real / meta : 0;
 
-  // ABS, Idle, RR: lower is better
-  const lowerIsBetter = ['ob-abs', 'ob-idle', 'ib-abs', 'ib-idle', 'qual-rr'];
+  // ABS, Idle, RR, AV: lower is better
+  const lowerIsBetter = ['ob-abs', 'ob-idle', 'ib-abs', 'ib-idle', 'qual-rr', 'inv-av'];
   if (lowerIsBetter.includes(key)) {
     if (ratio <= 1) bar.classList.add(''); // green by default
     else if (ratio <= 1.2) bar.classList.add('warn');
@@ -267,7 +267,6 @@ function kpi(label, real, meta, lowerIsBetter = false) {
   if (meta) return `• ${label}: ${real}% / meta ${meta}% ${icon}`;
   return `• ${label}: ${real}%`;
 }
-
 function labor(label, start, oficial, realizado) {
   const parts = [];
   if (start)     parts.push(`Start ${start}`);
@@ -338,7 +337,7 @@ function generateExecutiveSummary() {
     if (rts)  lines.push(rts);
     if (prod || rts) lines.push('');
 
-    const av = kpi('AV', $('inv-av-real').value, $('inv-av-meta').value);
+    const av = kpi('AV', $('inv-av-real').value, $('inv-av-meta').value, true);
     if (av) lines.push(av);
 
   } else if (area === 'Qualidade') {
@@ -1003,15 +1002,15 @@ document.head.appendChild(style);
 // ═══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   $('btn-print-pdf') && $('btn-print-pdf').addEventListener('click', printExecutivePDF);
-  $('btn-whatsapp') && $('btn-whatsapp').addEventListener('click', openWhatsModal);
-  $('whats-close') && $('whats-close').addEventListener('click', closeWhatsModal);
-  $('modal-whats') && $('modal-whats').addEventListener('click', e => {
+  $('btn-whatsapp')  && $('btn-whatsapp').addEventListener('click', openWhatsModal);
+  $('whats-close')   && $('whats-close').addEventListener('click', closeWhatsModal);
+  $('modal-whats')   && $('modal-whats').addEventListener('click', e => {
     if (e.target === $('modal-whats')) closeWhatsModal();
   });
-  $('whats-copy') && $('whats-copy').addEventListener('click', copyWhatsText);
-  $('whats-send-web') && $('whats-send-web').addEventListener('click', sendWhatsWeb);
-  $('whats-send-app') && $('whats-send-app').addEventListener('click', sendWhatsApp);
-  $('whats-text') && $('whats-text').addEventListener('input', updateCharCount);
+  $('whats-download')  && $('whats-download').addEventListener('click', downloadWhatsCard);
+  $('whats-canvas')    && $('whats-canvas').addEventListener('click', downloadWhatsCard);
+  $('whats-send-web')  && $('whats-send-web').addEventListener('click', sendWhatsWeb);
+  $('whats-send-app')  && $('whats-send-app').addEventListener('click', sendWhatsApp);
 });
 
 function getExecutiveText() {
@@ -1173,50 +1172,16 @@ function escapeHtml(str) {
 }
 
 // ═══════════════════════════════════════════
-// WHATSAPP MODAL
+// WHATSAPP — CARD VISUAL (Canvas)
 // ═══════════════════════════════════════════
 function openWhatsModal() {
   if (!hasExecutiveSummary()) {
     showToast('Gere o resumo executivo antes de compartilhar.', 'error');
     return;
   }
-
-  const area = $('f-area').value || '—';
-  const turno = $('f-turno').value || '—';
-  const user = App.currentUser?.name || '—';
-  const now = new Date();
-
-  // Formata mensagem otimizada para WhatsApp
-  const rawText = getExecutiveText().trim();
-  const lines = rawText.split('\n');
-
-  // Converte o resumo para formatação WhatsApp (*bold*, _italic_)
-  const waLines = lines.map(l => {
-    const trimmed = l.trim();
-    if (!trimmed) return '';
-    // Primeira linha (cabeçalho) → negrito
-    if (trimmed.startsWith('Resumo Executivo')) return `*${trimmed}*`;
-    // Linhas de seção em maiúsculas (OUTBOUND, INBOUND…) → negrito
-    if (/^[A-ZÇÃÕÁÉÍÓÚ\s—]+$/.test(trimmed) && trimmed.length > 2) return `*${trimmed}*`;
-    // Linhas de KPI/labor (começam com •) → manter como estão
-    return trimmed;
-  });
-
-  const msg = [
-    `🛒 *SHOPEE FULFILLMENT*`,
-    `*${area} | ${turno}* — ${formatDate(now)}`,
-    `👤 ${user}`,
-    ``,
-    ...waLines,
-    ``,
-    `_Painel Operacional · ${formatDate(now)} ${formatTime(now)}_`,
-  ].join('\n');
-
-  $('whats-text').value = msg;
-  updateCharCount();
+  buildWhatsCard();
   $('modal-whats').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => $('whats-text').focus(), 100);
 }
 
 function closeWhatsModal() {
@@ -1224,49 +1189,346 @@ function closeWhatsModal() {
   document.body.style.overflow = '';
 }
 
-function updateCharCount() {
-  const len = $('whats-text').value.length;
-  const el = $('whats-char-count');
-  el.textContent = `${len.toLocaleString('pt-BR')} caractere${len !== 1 ? 's' : ''}`;
-  el.style.color = len > 4000 ? 'var(--yellow)' : 'var(--text-muted)';
+// ─── Coleta todos os dados do formulário para o card ───
+function collectCardData() {
+  const area  = $('f-area').value  || '—';
+  const turno = $('f-turno').value || '—';
+  const now   = new Date();
+  const user  = App.currentUser?.name || '—';
+
+  // Mapa de linhas por área: [ { label, value, meta, lowerIsBetter, isSection, isLabor } ]
+  const rows = [];
+
+  if (area === 'Outbound') {
+    // Labor
+    const ckS=$('ob-ck-start').value, ckO=$('ob-ck-oficial').value, ckR=$('ob-ck-realizado').value;
+    const pkS=$('ob-pk-start').value, pkO=$('ob-pk-oficial').value, pkR=$('ob-pk-realizado').value;
+
+    if (ckS||ckO||ckR) rows.push({ isLabor:true, label:'Checking', start:ckS, oficial:ckO, realizado:ckR });
+    if (pkS||pkO||pkR) rows.push({ isLabor:true, label:'Picking',  start:pkS, oficial:pkO, realizado:pkR });
+
+    // KPIs
+    const kpis = [
+      { label:'NET',          val:$('ob-net-real').value,  meta:$('ob-net-meta').value },
+      { label:'COT',          val:$('ob-cot-real').value,  meta:$('ob-cot-meta').value },
+      { label:'ABS',          val:$('ob-abs-real').value,  meta:$('ob-abs-meta').value,  low:true },
+      { label:'Idle',         val:$('ob-idle-real').value, meta:$('ob-idle-meta').value, low:true },
+      { label:'Fast Start',   val:$('ob-fs-real').value,   meta:$('ob-fs-meta').value },
+      { label:'Strong Finish',val:$('ob-sf-real').value,   meta:$('ob-sf-meta').value },
+    ];
+    kpis.forEach(k => { if (k.val) rows.push({ label:k.label, value:k.val+'%', meta:k.meta?k.meta+'%':'', low:k.low||false }); });
+
+  } else if (area === 'Inbound') {
+    const ptS=$('ib-pt-start').value, ptO=$('ib-pt-oficial').value, ptR=$('ib-pt-realizado').value;
+    if (ptS||ptO||ptR) rows.push({ isLabor:true, label:'Putaway', start:ptS, oficial:ptO, realizado:ptR });
+
+    const kpis = [
+      { label:'OLA',  val:$('ib-ola-real').value,  meta:$('ib-ola-meta').value },
+      { label:'ABS',  val:$('ib-abs-real').value,  meta:$('ib-abs-meta').value,  low:true },
+      { label:'Idle', val:$('ib-idle-real').value, meta:$('ib-idle-meta').value, low:true },
+    ];
+    kpis.forEach(k => { if (k.val) rows.push({ label:k.label, value:k.val+'%', meta:k.meta?k.meta+'%':'', low:k.low||false }); });
+
+  } else if (area === 'Inventário') {
+    const pS=$('inv-prod-start').value, pR=$('inv-prod-realizado').value;
+    const rS=$('inv-rts-start').value,  rR=$('inv-rts-realizado').value;
+    if (pS||pR) rows.push({ isLabor:true, label:'Produtividade', start:pS, oficial:'', realizado:pR });
+    if (rS||rR) rows.push({ isLabor:true, label:'RTS',           start:rS, oficial:'', realizado:rR });
+    const av = $('inv-av-real').value;
+    if (av) rows.push({ label:'AV', value:av+'%', meta:$('inv-av-meta').value?$('inv-av-meta').value+'%':'', low:true });
+
+  } else if (area === 'Qualidade') {
+    const pS=$('qual-prod-start').value, pR=$('qual-prod-realizado').value;
+    if (pS||pR) rows.push({ isLabor:true, label:'Produtividade', start:pS, oficial:'', realizado:pR });
+    const kpis = [
+      { label:'RR',     val:$('qual-rr-real').value,  meta:$('qual-rr-meta').value,  low:true },
+      { label:'OLA RI', val:$('qual-ola-real').value, meta:$('qual-ola-meta').value },
+    ];
+    kpis.forEach(k => { if (k.val) rows.push({ label:k.label, value:k.val+'%', meta:k.meta?k.meta+'%':'', low:k.low||false }); });
+  }
+
+  const riscos  = $('resumo-riscos').value.trim();
+  const proximo = $('resumo-proximo').value.trim();
+
+  return { area, turno, user, now, rows, riscos, proximo };
 }
 
-function getWhatsMessage() {
-  return $('whats-text').value.trim();
+// ─── Renderiza o card no Canvas ───
+function buildWhatsCard() {
+  const d = collectCardData();
+  const canvas = $('whats-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Dimensões — formato "card de chat" igual ao print
+  const W = 360;
+  const PAD = 20;
+  const ROW_H = 34;
+  const SECTION_H = 26;
+
+  // ── calcular altura total dinamicamente ──
+  let estimatedH = 90; // header
+  estimatedH += SECTION_H; // título área
+  d.rows.forEach(r => { estimatedH += r.isLabor ? 46 : ROW_H; });
+  if (d.riscos)  estimatedH += ROW_H + 8;
+  if (d.proximo) estimatedH += ROW_H + 4;
+  estimatedH += 48; // footer
+
+  canvas.width  = W * 2;   // retina
+  canvas.height = (estimatedH + 24) * 2;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = (estimatedH + 24) + 'px';
+  ctx.scale(2, 2);
+
+  // ── Paleta ──
+  const C = {
+    bg:       '#0E1117',
+    card:     '#141921',
+    border:   'rgba(255,255,255,0.07)',
+    orange:   '#EE4D2D',
+    green:    '#34D399',
+    red:      '#F87171',
+    yellow:   '#FBBF24',
+    muted:    '#4A5568',
+    sub:      '#8892A4',
+    text:     '#F0F2F5',
+    divider:  'rgba(255,255,255,0.06)',
+    labelBg:  'rgba(238,77,45,0.12)',
+  };
+
+  const H = estimatedH + 24;
+
+  // ── Fundo ──
+  roundRect(ctx, 0, 0, W, H, 14, C.card);
+
+  // Borda sutil
+  ctx.strokeStyle = 'rgba(238,77,45,0.18)';
+  ctx.lineWidth = 1;
+  roundRectStroke(ctx, 0.5, 0.5, W-1, H-1, 14);
+
+  // Linha topo laranja
+  ctx.fillStyle = C.orange;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, W, 3, [14, 14, 0, 0]);
+  ctx.fill();
+
+  let y = 14;
+
+  // ── Header ──
+  // Dia da semana + data
+  const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const diaSemana = dias[d.now.getDay()];
+  const dateStr = `${diaSemana} ${formatDate(d.now).replace(/\//g, '/')}`;
+
+  ctx.font = 'bold 13px -apple-system,sans-serif';
+  ctx.fillStyle = C.orange;
+  ctx.fillText(dateStr, PAD, y + 16);
+
+  // Fechar X (decorativo)
+  ctx.font = '12px -apple-system,sans-serif';
+  ctx.fillStyle = C.muted;
+  ctx.fillText('✕', W - PAD - 10, y + 16);
+
+  y += 28;
+
+  // Área + turno
+  ctx.font = 'bold 11px -apple-system,sans-serif';
+  ctx.fillStyle = C.sub;
+  ctx.fillText(`${d.area.toUpperCase()}  |  ${d.turno}`, PAD, y + 13);
+  y += 22;
+
+  // Usuário
+  ctx.font = '11px -apple-system,sans-serif';
+  ctx.fillStyle = C.sub;
+  ctx.fillText('👤  ' + d.user, PAD, y + 12);
+  y += 20;
+
+  // Divider
+  dividerLine(ctx, PAD, y, W - PAD*2, C.divider);
+  y += 14;
+
+  // ── Título seção ──
+  ctx.font = 'bold 10px -apple-system,sans-serif';
+  ctx.fillStyle = C.muted;
+  ctx.fillText('INDICADORES', PAD, y + 10);
+  y += 20;
+
+  // ── Linhas de dados ──
+  d.rows.forEach((row, i) => {
+    // Divider entre itens
+    if (i > 0) {
+      dividerLine(ctx, PAD, y, W - PAD*2, C.divider);
+      y += 1;
+    }
+
+    if (row.isLabor) {
+      // Labor row — compacto
+      ctx.font = 'bold 11px -apple-system,sans-serif';
+      ctx.fillStyle = C.sub;
+      ctx.fillText(row.label.toUpperCase(), PAD, y + 12);
+      y += 16;
+
+      // Sub-linha com valores
+      const parts = [];
+      if (row.start)    parts.push({ k:'Start',    v: row.start });
+      if (row.oficial)  parts.push({ k:'Oficial',  v: row.oficial });
+      if (row.realizado)parts.push({ k:'Real',     v: row.realizado });
+
+      let lx = PAD;
+      parts.forEach(p => {
+        ctx.font = '10px -apple-system,sans-serif';
+        ctx.fillStyle = C.sub;
+        const kw = ctx.measureText(p.k + '  ').width;
+        ctx.fillText(p.k, lx, y + 12);
+        ctx.font = 'bold 11px -apple-system,sans-serif';
+        ctx.fillStyle = C.text;
+        ctx.fillText(p.v, lx + kw, y + 12);
+        lx += kw + ctx.measureText(p.v).width + 18;
+      });
+      y += 24;
+
+    } else {
+      // KPI row
+      const real = parseFloat(row.value);
+      const meta = parseFloat(row.meta);
+      const hasCompare = !isNaN(real) && !isNaN(meta) && row.meta;
+      const ok = hasCompare ? (row.low ? real <= meta : real >= meta) : true;
+      const statusColor = hasCompare ? (ok ? C.green : C.red) : C.text;
+
+      // Label esquerda
+      ctx.font = '12px -apple-system,sans-serif';
+      ctx.fillStyle = C.sub;
+      ctx.fillText(row.label, PAD + 18, y + ROW_H/2 + 4);
+
+      // Valor direita — bold, colorido
+      ctx.font = 'bold 14px -apple-system,sans-serif';
+      ctx.fillStyle = C.text;
+      const valW = ctx.measureText(row.value).width;
+      ctx.fillText(row.value, W - PAD - valW - (hasCompare ? 52 : 0), y + ROW_H/2 + 4);
+
+      // Badge meta / status
+      if (hasCompare) {
+        const diff = row.low
+          ? (real <= meta ? '+' : '') + (meta - real).toFixed(1) + 'pp'
+          : (real >= meta ? '+' : '') + (real - meta).toFixed(1) + 'pp';
+        const bw = 46;
+        roundRect(ctx, W - PAD - bw, y + ROW_H/2 - 9, bw, 18, 4, ok ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)');
+        ctx.font = 'bold 10px -apple-system,sans-serif';
+        ctx.fillStyle = statusColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(diff, W - PAD - bw/2, y + ROW_H/2 + 4);
+        ctx.textAlign = 'left';
+      }
+
+      // Ícone colorido esquerdo
+      ctx.font = '11px -apple-system,sans-serif';
+      ctx.fillStyle = statusColor;
+      ctx.fillText(ok ? '●' : '●', PAD, y + ROW_H/2 + 4);
+
+      y += ROW_H;
+    }
+  });
+
+  // ── Riscos / próximo turno ──
+  if (d.riscos || d.proximo) {
+    y += 4;
+    dividerLine(ctx, PAD, y, W - PAD*2, C.divider);
+    y += 10;
+
+    ctx.font = 'bold 10px -apple-system,sans-serif';
+    ctx.fillStyle = C.muted;
+    ctx.fillText('OBSERVAÇÕES', PAD, y + 10);
+    y += 18;
+
+    if (d.riscos) {
+      ctx.font = '10px -apple-system,sans-serif';
+      ctx.fillStyle = C.yellow;
+      ctx.fillText('⚠ ', PAD, y + 12);
+      ctx.fillStyle = C.sub;
+      wrapText(ctx, d.riscos, PAD + 16, y + 12, W - PAD*2 - 16, 14);
+      y += 24 + Math.max(0, (Math.ceil(d.riscos.length / 38) - 1) * 14);
+    }
+
+    if (d.proximo) {
+      ctx.font = '10px -apple-system,sans-serif';
+      ctx.fillStyle = C.green;
+      ctx.fillText('→ ', PAD, y + 12);
+      ctx.fillStyle = C.sub;
+      wrapText(ctx, d.proximo, PAD + 14, y + 12, W - PAD*2 - 14, 14);
+      y += 20;
+    }
+  }
+
+  // ── Footer ──
+  y = H - 36;
+  dividerLine(ctx, PAD, y, W - PAD*2, C.divider);
+  y += 10;
+  ctx.font = '9px -apple-system,sans-serif';
+  ctx.fillStyle = C.muted;
+  ctx.fillText('Gerado via Painel Operacional · Shopee Fulfillment', PAD, y + 10);
+  ctx.fillText(`${formatDate(d.now)} ${formatTime(d.now)}`, PAD, y + 22);
 }
 
-function copyWhatsText() {
-  const text = getWhatsMessage();
-  if (!text) return;
-  navigator.clipboard.writeText(text)
-    .then(() => showToast('Texto copiado para a área de transferência!', 'success'))
-    .catch(() => {
-      // Fallback para browsers sem clipboard API
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast('Texto copiado!', 'success');
-    });
+// ─── Helpers de desenho ───
+function roundRect(ctx, x, y, w, h, r, fill) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function roundRectStroke(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.stroke();
+}
+
+function dividerLine(ctx, x, y, w, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.stroke();
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  let cy = y;
+  words.forEach((word, i) => {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line.trim(), x, cy);
+      line = word + ' ';
+      cy += lineH;
+    } else {
+      line = test;
+    }
+  });
+  ctx.fillText(line.trim(), x, cy);
+}
+
+// ─── Download da imagem ───
+function downloadWhatsCard() {
+  const canvas = $('whats-canvas');
+  const link = document.createElement('a');
+  const area  = $('f-area').value  || 'turno';
+  const turno = $('f-turno').value || '';
+  const now   = new Date();
+  link.download = `shopee_${area}_${turno}_${formatDate(now).replace(/\//g,'-')}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('Imagem salva! Compartilhe no WhatsApp.', 'success');
 }
 
 function sendWhatsWeb() {
-  const text = getWhatsMessage();
-  if (!text) return;
-  const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank');
+  window.open('https://web.whatsapp.com', '_blank');
+  downloadWhatsCard();
   closeWhatsModal();
 }
 
 function sendWhatsApp() {
-  const text = getWhatsMessage();
-  if (!text) return;
-  // wa.me funciona tanto no celular (abre app) quanto no desktop (abre web)
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank');
+  window.open('whatsapp://', '_blank');
+  downloadWhatsCard();
   closeWhatsModal();
 }
